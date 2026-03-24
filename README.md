@@ -14,3 +14,12 @@ ideal para automatizar altas masivas.
 - Compatible con Microsoft Graph PowerShell
 
 ## 📁 Ejemplo CSV
+DisplayName,UserPrincipalName,Password
+Juan Perez,juan@empresa.com,P@ss1234!
+Maria Lopez,maria@empresa.com,P@ss1234!
+
+## ▶️ Ejecución
+
+```powershell
+Connect-MgGraph -Scopes User.ReadWrite.All
+./import-users.ps1
