@@ -1,11 +1,16 @@
-### 🧾 README.md
+# ✅ **4. azure-ad-user-import — README.md**
 
 ```md
-# Importación de Usuarios a Entra ID (Azure AD)
+# 👥 Azure AD Bulk User Import (PowerShell)
 
-Crea usuarios automáticamente leyendo un CSV.
+Este script importa usuarios en Azure AD (Entra ID) desde un archivo CSV,
+ideal para automatizar altas masivas.
 
-## Ejecución
-```powershell
-Connect-MgGraph -Scopes User.ReadWrite.All
-./import-users.ps1
+## ✅ Características
+
+- Lectura de CSV
+- Creación automática de usuarios
+- Password inicial configurable
+- Compatible con Microsoft Graph PowerShell
+
+## 📁 Ejemplo CSV
