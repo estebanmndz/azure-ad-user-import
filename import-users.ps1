@@ -3,33 +3,70 @@ param(
     [string]$CsvPath
 )
 
-Import-Module Microsoft.Graph.Users
+# =========================
+# CONFIG
+# =========================
+$logFile = "import.log"
 
-# Conexión a Microsoft Graph
-Connect-MgGraph -Scopes User.ReadWrite.All
+function Log {
+    param([string]$message)
 
-# Importar usuarios
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $entry = "$timestamp - $message"
+
+    Write-Host $entry
+    $entry | Out-File -FilePath $logFile -Append
+}
+
+# =========================
+# VALIDACIÓN CSV
+# =========================
 if (!(Test-Path $CsvPath)) {
-    Write-Host "❌ CSV no encontrado: $CsvPath"
+    Log "❌ CSV no encontrado: $CsvPath"
     exit
 }
 
+# =========================
+# CONEXIÓN A GRAPH
+# =========================
+Log "🔐 Conectando a Microsoft Graph..."
+try {
+    Connect-MgGraph -Scopes "User.ReadWrite.All" -ErrorAction Stop
+} catch {
+    Log "❌ Error conectando a Microsoft Graph"
+    Log $_
+    exit
+}
+
+# =========================
+# IMPORTAR CSV
+# =========================
 $users = Import-Csv $CsvPath
 
+if (-not $users) {
+    Log "⚠️ CSV vacío o sin datos"
+    exit
+}
+
+Log "📥 Usuarios cargados: $($users.Count)"
+
+# =========================
+# PROCESAMIENTO
+# =========================
 foreach ($u in $users) {
 
-    # Validación básica
+    # Validación de campos
     if (-not $u.DisplayName -or -not $u.UserPrincipalName -or -not $u.Password) {
-        Write-Host "⚠️ Datos incompletos para un usuario. Saltando..."
+        Log "⚠️ Datos incompletos. Usuario omitido."
         continue
     }
 
     try {
-        # Comprobar si el usuario ya existe
+        # Comprobar si existe
         $existingUser = Get-MgUser -Filter "userPrincipalName eq '$($u.UserPrincipalName)'" -ErrorAction SilentlyContinue
 
         if ($existingUser) {
-            Write-Host "⚠️ Usuario ya existe: $($u.UserPrincipalName)"
+            Log "⚠️ Usuario ya existe: $($u.UserPrincipalName)"
             continue
         }
 
@@ -40,12 +77,15 @@ foreach ($u in $users) {
             -PasswordProfile @{
                 Password = $u.Password
                 ForceChangePasswordNextSignIn = $true
-            }
+            } `
+            -MailNickname ($u.UserPrincipalName.Split("@")[0])
 
-        Write-Host "✅ Usuario creado: $($u.UserPrincipalName)"
+        Log "✅ Usuario creado: $($u.UserPrincipalName)"
 
     } catch {
-        Write-Host "❌ Error creando usuario: $($u.UserPrincipalName)"
-        Write-Host $_
+        Log "❌ Error creando usuario: $($u.UserPrincipalName)"
+        Log $_
     }
 }
+
+Log "🎯 Proceso de importación finalizado"
